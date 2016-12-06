@@ -2,6 +2,16 @@
 
 namespace wycomco\GitLfsPhp;
 
+/**
+* GitLfsBatchApi implements Git LFS batch API
+*
+* GitLfsBatchApi processes request to the Git LFS batch API and returns
+* information on how to transfer files to the Git LFS server
+*
+* @author   Matthias Choules <choules@example.com>
+* @access   public
+* @see      https://github.com/wycomco/git-lfs-php
+*/
 class GitLfsBatchApi {
     
     /** @var GitLfsToken Token associated with current request */

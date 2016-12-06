@@ -2,6 +2,16 @@
 
 namespace wycomco\GitLfsPhp;
 
+/**
+* GitLfsAuthenticator handles Git LFS authentication requests
+*
+* GitLfsAuthenticator authenticates request against Gitolite. It
+* should be used by an SSH invocation of `git-lfs-authenticate`
+*
+* @author   Matthias Choules <choules@example.com>
+* @access   public
+* @see      https://github.com/wycomco/git-lfs-php
+*/
 class GitLfsAuthenticator {
     
     protected $targetRepo = '';

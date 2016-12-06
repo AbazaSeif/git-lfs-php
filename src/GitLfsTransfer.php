@@ -2,6 +2,17 @@
 
 namespace wycomco\GitLfsPhp;
 
+/**
+* GitLfsTransfer handles transfer requests for Git LFS
+*
+* Processes download, upload and verify requests of Git LFS clients
+* Requires the webserver and PHP to be configured properly to handle
+* HTTP PUT requests and to not time out on large requests
+*
+* @author   Matthias Choules <choules@example.com>
+* @access   public
+* @see      https://github.com/wycomco/git-lfs-php
+*/
 class GitLfsTransfer {
     
     /** @var GitLfsToken Token associated with current request */
@@ -336,6 +347,15 @@ class GitLfsTransfer {
         }
     }
     
+    /**
+    * Returns a HTTP status code and and optional message
+    *
+    * @param int $code HTTP status code
+    * @param string $http_message Corresponding HTTP message
+    * @param string $message Additional text to be sent to the client
+    *
+    * @return void
+    */
     private function return_http_status($code = 500, $http_message = 'Internal Server Error', $message = '') {
         header('HTTP/1.1 '.$code.' '.$http_message);
         echo $message;

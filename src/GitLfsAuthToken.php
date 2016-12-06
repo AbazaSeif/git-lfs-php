@@ -2,6 +2,23 @@
 
 namespace wycomco\GitLfsPhp;
 
+/**
+* GitLfsAuthToken represents an authentication token for Git LFS
+*
+* GitLfsAuthToken stores information on authenticated users and their
+* access privileges on Git repositories. By now all tokens need to be
+* saved on disk.
+*
+* Example usage:
+* $token = GitLfsAuthToken::load('username');
+* $token->add_privilege('company/repo', 'upload');
+* $access = $token->has_privilege('company/repo', 'upload');
+* $token->flush();
+*
+* @author   Matthias Choules <choules@example.com>
+* @access   public
+* @see      https://github.com/wycomco/git-lfs-php
+*/
 class GitLfsAuthToken {
     
     /** @var string User name */

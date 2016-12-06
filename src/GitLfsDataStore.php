@@ -2,6 +2,16 @@
 
 namespace wycomco\GitLfsPhp;
 
+/**
+* GitLfsDataStore manages Git LFS datastore
+*
+* Handles files stored by and for Git LFS by using OIDs and
+* file sizes to identify actual items in the file system.
+*
+* @author   Matthias Choules <choules@example.com>
+* @access   public
+* @see      https://github.com/wycomco/git-lfs-php
+*/
 class GitLfsDataStore {
     
     /** @var GitLfsToken Token associated with current request */
