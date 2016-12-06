@@ -71,23 +71,6 @@ class GitLfsTransfer {
     }
     
     /**
-    * Return the API response
-    *
-    * @return void
-    */
-    private function return_json_response() {
-        
-        $response = array(
-            'transfer' => 'basic',
-            'objects' => $this->objects,
-        );
-        
-        header('HTTP/1.1 200 Ok');
-        
-        $this->return_as_json($response);
-    }
-    
-    /**
     * Authenticates user with HTTP basic auth
     *
     * @return bool True on success
@@ -95,17 +78,17 @@ class GitLfsTransfer {
     private function authenticate() {
         
         if(!isset($_SERVER['PHP_AUTH_USER']) || empty($_SERVER['PHP_AUTH_USER'])) {
-            $this->return_response_error(401, 'Username not given or empty');
+            $this->return_http_status(401, 'Unauthorized', 'Username not given or empty');
         }
         
         if(!isset($_SERVER['PHP_AUTH_PW']) || empty($_SERVER['PHP_AUTH_PW'])) {
-            $this->return_response_error(401, 'Password not given or empty');
+            $this->return_http_status(401, 'Unauthorized', 'Password not given or empty');
         }
         
         $token = GitLfsAuthToken::load($_SERVER['PHP_AUTH_USER']);
         
         if(!$token->check_password($_SERVER['PHP_AUTH_PW'])) {
-            $this->return_response_error(401, 'Passwords do not match');
+            $this->return_http_status(401, 'Unauthorized', 'Passwords do not match');
         }
         
         $this->token = $token;
@@ -143,9 +126,9 @@ class GitLfsTransfer {
         
         if(!$this->token->has_privilege($this->repo, $operation)) {
             if($operation == 'upload') {
-                $this->return_response_error(403);
+                $this->return_http_status(403, 'Forbidden');
             }else{
-                $this->return_response_error(404);
+                $this->return_http_status(404, 'Not Found');
             }
         }
         
@@ -191,7 +174,7 @@ class GitLfsTransfer {
         
         if(defined('GIT_LFS_REPOS')){
             if(!in_array($repo, unserialize(GIT_LFS_REPOS))) {
-                $this->return_response_error(404, 'Repository is not listed in configured repositories');
+                $this->return_http_status(404, 'Not Found', 'Repository is not listed in configured repositories');
             }
         }
         
@@ -221,21 +204,18 @@ class GitLfsTransfer {
             $requestBody = file_get_contents('php://input');
             
             if($requestBody == '') {
-                header('HTTP/1.1 422 Unprocessable Entity');
-                exit;
+                $this->return_http_status(422, 'Unprocessable Entity');
             }
             
             // Decode json and return contents as associative array
             $contents = json_decode($requestBody, true);
     
             if(is_null($contents)) {
-                header('HTTP/1.1 422 Unprocessable Entity');
-                exit;
+                $this->return_http_status(422, 'Unprocessable Entity');
             }
     
             if(!isset($contents['oid']) || !is_string($contents['oid']) || $contents['oid'] == '' || !isset($contents['size']) || !is_numeric($contents['size'])) {
-                header('HTTP/1.1 422 Unprocessable Entity');
-                exit;
+                $this->return_http_status(422, 'Unprocessable Entity');
             }
             
             $this->oid = $contents['oid'];
@@ -318,13 +298,9 @@ class GitLfsTransfer {
         $size = $this->size;
         
         if($dataStore->file_exists($oid, $size)) {
-            header('HTTP/1.1 200 OK');
-            echo 'File exists';
-            exit;
+            $this->return_http_status(200, 'OK', 'File exist');
         }else {
-            header('HTTP/1.1 404 Not Found');
-            echo 'File does not exist';
-            exit;
+            $this->return_http_status(404, 'Not Found', 'File does not exist');
         }
     }
     
@@ -356,9 +332,14 @@ class GitLfsTransfer {
             
             exit;
         }else{
-            header('HTTP/1.1 404 Not Found');
-            echo 'File does not exist';
-            exit;
+            $this->return_http_status(404, 'Not Found', 'File does not exist');
         }
+    }
+    
+    private function return_http_status($code = 500, $http_message = 'Internal Server Error', $message = '') {
+        header('HTTP/1.1 '.$code.' '.$http_message);
+        echo $message;
+        
+        exit;
     }
 }
