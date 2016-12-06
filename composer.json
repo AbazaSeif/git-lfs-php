@@ -1,0 +1,20 @@
+{
+    "name": "wycomco/git-lfs-php",
+    "description": "PHP implementation of Git LFS",
+    "keywords": ["php", "git", "LFS", "Git LFS"],
+    "homepage": "https://github.com/wycomco/git-lfs-php",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Matthias Choules",
+            "email": "choules@wycomco.de"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.3"
+    },
+    "autoload": {
+        "psr-4": { "wycomco\\GitLfsPhp\\": "src/" }
+    }
+}
