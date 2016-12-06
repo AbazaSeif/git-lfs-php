@@ -31,7 +31,7 @@ class GitLfsAuthToken {
     private $directory = '';
 
     /** @var int Time to live for tokens, given in seconds */
-    private $ttl = 900;
+    private $ttl = 7200;
 
     /** @var \DateTime When will this token expire */
     private $expires_at = null;
