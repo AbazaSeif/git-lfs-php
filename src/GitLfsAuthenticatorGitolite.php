@@ -3,7 +3,7 @@
 namespace wycomco\GitLfsPhp;
 
 /**
-* GitLfsAuthenticator handles Git LFS authentication requests
+* GitLfsAuthenticatorGitolite handles Git LFS authentication requests
 *
 * GitLfsAuthenticator authenticates request against Gitolite. It
 * should be used by an SSH invocation of `git-lfs-authenticate`
@@ -12,7 +12,7 @@ namespace wycomco\GitLfsPhp;
 * @access   public
 * @see      https://github.com/wycomco/git-lfs-php
 */
-class GitLfsAuthenticator {
+class GitLfsAuthenticatorGitolite implements GitLfsAuthenticatorInterface {
     
     protected $targetRepo = '';
     protected $action = '';
@@ -107,7 +107,7 @@ class GitLfsAuthenticator {
     *
     * @return bool True if given user has access, false if not
     */
-    protected function has_access($repo = null, $user = null, $action = null) {
+    public static function has_access($repo = null, $user = null, $action = null) {
         
         if(is_null($repo)) {
             $repo = $this->targetRepo = $this->prepare_repo_name($this->targetRepo);
@@ -135,9 +135,9 @@ class GitLfsAuthenticator {
     }
 
     /**
-    * Authenticates User
+    * Authenticates User by checking access privs on given repository
     *
-    * @return void
+    * @return bool True on successful authentication
     */
     public function authenticate() {
         $token = GitLfsAuthToken::load($this->glUser);

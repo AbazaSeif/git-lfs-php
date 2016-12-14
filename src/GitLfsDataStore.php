@@ -204,11 +204,11 @@ class GitLfsDataStore {
         }
         
         // Getting 3-chars-long parts from the oid
-        $splits = str_split($oid, 3);
+        $splits = str_split($oid, 2);
         
         $path = '';
         
-        for($i = 0; $i < 4; $i++) {
+        for($i = 0; $i < 5; $i++) {
             $path .= DIRECTORY_SEPARATOR.$splits[$i];
         }
         
