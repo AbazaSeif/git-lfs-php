@@ -19,7 +19,7 @@ class GitLfsAuthenticatorGitolite implements GitLfsAuthenticatorInterface {
     protected $glBinDir = '';
     protected $glUser = '';
     
-    private $validActions = array(
+    private static $validActions = array(
         'download' => 'R',
         'upload' => 'W',
     );
@@ -73,7 +73,7 @@ class GitLfsAuthenticatorGitolite implements GitLfsAuthenticatorInterface {
         $this->action = $parameters[2];
 
         // If given action is not listed as valid action...
-        if(!isset($this->validActions[$this->action])) {
+        if(!isset(self::$validActions[$this->action])) {
             throw new \Exception('Error: Provided action not valid.'."\n\n".$this->helpstring);
         }
     }
@@ -108,20 +108,39 @@ class GitLfsAuthenticatorGitolite implements GitLfsAuthenticatorInterface {
     * @return bool True if given user has access, false if not
     */
     public static function has_access($repo = null, $user = null, $action = null) {
+
+        $repo = self::prepare_repo_name($repo);
+
+        if(empty($repo)) {
+            throw new \Exception('Could not check on access privilege: No repository given.');
+        }
+
+        if(empty($user)) {
+            throw new \Exception('Could not check on access privilege: No user given.');
+        }
         
-        if(is_null($repo)) {
-            $repo = $this->targetRepo = $this->prepare_repo_name($this->targetRepo);
+        if(empty($action)) {
+            throw new \Exception('Could not check on access privilege: No action given.');
+        }
+        
+        if(!isset(self::$validActions[$action])) {
+            throw new \Exception('Could not check on access privilege: Provided action not valid.');
+        }
+        
+        // Checking on Gitolite bin directory
+        if(!defined('GIT_LFS_GL_BINDIR') || GIT_LFS_GL_BINDIR == '') {
+            throw new \Exception('Could not check on access privilege: No Gitolite binary path given.');
         }
 
-        if(is_null($user)) {
-            $user = $this->glUser;
+        $glBinDir = GIT_LFS_GL_BINDIR;
+        
+        if(!is_executable($glBinDir.DIRECTORY_SEPARATOR.'gitolite')) {
+            throw new \Exception('Could not check on access privilege: Given Gitolite binary is not executable.');
         }
-
-        if(is_null($action)) {
-            $action = $this->action;
-        }
-
-        $cmd = $this->glBinDir.DIRECTORY_SEPARATOR.'gitolite access -q '.$repo.' '.$user.' '.$this->validActions[$action];
+        
+        $glAction = self::$validActions[$action];
+        
+        $cmd = $glBinDir.DIRECTORY_SEPARATOR.'gitolite access -q '.$repo.' '.$user.' '.$glAction;
         $output = array();
         $rval = null;
         
@@ -135,17 +154,38 @@ class GitLfsAuthenticatorGitolite implements GitLfsAuthenticatorInterface {
     }
 
     /**
+    * Checks access privileges for given repository and user
+    *
+    * Uses the parameters of this class instance for checking on access privileges
+    *
+    * @return bool True if given user has access, false if not
+    */
+    private function has_access_non_static() {
+
+        $repo = $this->targetRepo;
+        $user = $this->glUser;
+        $action = $this->action;
+        
+        if(!defined('GIT_LFS_GL_BINDIR')) {
+            define('GIT_LFS_GL_BINDIR', $this->glBinDir);
+        }
+        
+        return $this->has_access($repo, $user, $action);
+    }
+
+    /**
     * Authenticates User by checking access privs on given repository
     *
     * @return bool True on successful authentication
     */
     public function authenticate() {
         $token = GitLfsAuthToken::load($this->glUser);
-        
-        if($this->has_access()) {
+        $token->revalidate();
+        if($this->has_access_non_static()) {
             $token->add_privilege($this->targetRepo, $this->action);
             $token->flush();
             echo $token->get_json();
+            
             return true;
         }else{
             $token->remove_privilege($this->targetRepo, $this->action);

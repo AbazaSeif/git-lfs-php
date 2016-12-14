@@ -42,6 +42,9 @@ class GitLfsAuthToken {
     /** @var bool Was the token written to filesystem already */
     private $file_written = false;
 
+    /** @var string Class name of the GitLfsAuthenticator, including namespaces */
+    private $authenticator = '';
+
     /** @var array Associative array containing the valid Actions */
     private $validActions = array(
         'download' => 'R',
@@ -84,6 +87,8 @@ class GitLfsAuthToken {
         if(!is_writable($this->directory)) {
             throw new \Exception('Token directory is not writable');
         }
+
+        $this->get_authenticator();
 
         return $this;
     }
@@ -177,7 +182,12 @@ class GitLfsAuthToken {
             'expires_at' => ($this->expires_at instanceof \DateTime) ? $this->expires_at->format('c') : '',
         );
 
-        $contents = json_encode($contents);
+        if(defined('JSON_PRETTY_PRINT')) {
+            $contents = json_encode($contents, JSON_PRETTY_PRINT)."\n";
+        }else {
+            $contents = $this->prettyPrint(json_encode($contents))."\n";
+        }
+        
 
         if(file_put_contents($filename, $contents) === false) {
             throw new \Exception('Could not create token file');
@@ -423,12 +433,16 @@ class GitLfsAuthToken {
             return false;
         }
 
-        if(!is_array($this->privileges[$repo])) {
+        if(!isset($this->privileges[$repo]) || !is_array($this->privileges[$repo])) {
             $this->privileges[$repo] = array();
         }
 
         if(in_array($action, $this->privileges[$repo])) {
-            $this->privileges[$repo] = array_diff($this->privileges, array($action));
+            $this->privileges[$repo] = array_diff($this->privileges[$repo], array($action));
+        }
+        
+        if(count($this->privileges[$repo]) == 0) {
+            unset($this->privileges[$repo]);
         }
 
         return $this; 
@@ -632,5 +646,56 @@ class GitLfsAuthToken {
         $this->generate_auth_header();
 
         return $this;
+    }
+    
+    /**
+    * Tries to get the used GitLfsAuthenticator 
+    *
+    * @return void
+    */
+    protected function get_authenticator() {
+        $backtrace = debug_backtrace();
+        
+        $authenticator = '';
+        
+        foreach($backtrace AS $call) {
+            if(isset($call['class'])) {
+                $interfaces = class_implements($call['class']);
+                if(in_array('wycomco\GitLfsPhp\GitLfsAuthenticatorInterface', $interfaces)) {
+                    $authenticator = $call['class'];
+                }
+            }
+        }
+
+        $this->authenticator = $authenticator;
+    }
+    
+    /**
+    * Revalidates the access present privileges for this token 
+    *
+    * @return bool True on success, false on failure
+    */
+    public function revalidate() {
+        
+        // Needs a valid Authenticator
+        if(empty($this->authenticator) || !class_exists($this->authenticator)) {
+            return false;
+        }
+
+        $authenticator = $this->authenticator;
+        
+        foreach($this->privileges AS $repo => $privileges) {
+            foreach($privileges AS $action) {
+                if(!$authenticator::has_access($repo, $this->user, $action)) {
+                    if(!$this->remove_privilege($repo, $action)) {
+                        return false;
+                    }    
+                }
+            }
+        }
+        
+        $this->extend_ttl();
+        
+        return true;
     }
 }
